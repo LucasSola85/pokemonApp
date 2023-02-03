@@ -115,7 +115,8 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
 
     return {
         paths: pokemonPaths.map((id) => ({ params: { id } })),
-        fallback: false
+        // fallback: false
+        fallback: 'blocking'
     }
 
 }
@@ -124,20 +125,44 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
 export const getStaticProps: GetStaticProps = async ({ params }) => {
 
     const { id } = params as { id: string };
-    const { data } = await pokeApi.get<PokemonResponse>(`/pokemon/${id}`);
-
-    const pokemon = {
-        id: data.id,
-        name: data.name,
-        sprites: data.sprites
-    }
-
-    return {
-        props: {
-            pokemon
+    
+    try {
+        const { data } = await pokeApi.get<PokemonResponse>(`/pokemon/${id}`);
+        
+        const pokemon = {
+            id: data.id,
+            name: data.name,
+            sprites: data.sprites
         }
+
+        if(!data){
+            return {
+                redirect: {
+                    destination: '/',
+                    permanent: false
+                }
+            }
+        }
+
+        return {
+            props: {
+                pokemon
+            },
+            revalidate: 86400
+        }    
+    
+    } catch (error) {
+
+        return {
+            notFound: true
+        }
+        
     }
 
+
+
+ 
+   
 }
 
 

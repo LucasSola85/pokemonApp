@@ -18,14 +18,14 @@ type Props = {
 const PokemonByNamePage: NextPage<Props> = ({ pokemon }) => {
 
 
-    const [ isInFavorites, setIsInFavorites] = useState( localFavorites.existsInFavorites(pokemon.id) )
+    const [isInFavorites, setIsInFavorites] = useState(localFavorites.existsInFavorites(pokemon.id))
 
-    
+
     const onToggleFavorite = () => {
-        localFavorites.toggleFavorites( pokemon.id );       
-        setIsInFavorites(!isInFavorites); 
+        localFavorites.toggleFavorites(pokemon.id);
+        setIsInFavorites(!isInFavorites);
 
-        if( !isInFavorites ) {
+        if (!isInFavorites) {
             confetti({
                 zIndex: 999,
                 particleCount: 100,
@@ -60,11 +60,11 @@ const PokemonByNamePage: NextPage<Props> = ({ pokemon }) => {
                         <Card.Header css={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Text h1 transform="capitalize">{pokemon.name}</Text>
                             <Button
-                                ghost = { !isInFavorites }
+                                ghost={!isInFavorites}
                                 color="gradient"
                                 onPress={onToggleFavorite}
                             >
-                            { isInFavorites ? 'Borrar de Favoritos' : 'Agregar a Favoritos' }
+                                {isInFavorites ? 'Borrar de Favoritos' : 'Agregar a Favoritos'}
                             </Button>
                         </Card.Header>
                         <Card.Body>
@@ -113,11 +113,11 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
 
     const { data } = await pokeApi.get<PokemonListResponse>(`/pokemon?limit=151`);
 
-    const pokemonPaths: string[] = data.results.map( (pokemon) => pokemon.name );
+    const pokemonPaths: string[] = data.results.map((pokemon) => pokemon.name);
 
     return {
-        paths: pokemonPaths.map( (pokemon) => ({ params: { name: pokemon } }) ),
-        fallback: false
+        paths: pokemonPaths.map((pokemon) => ({ params: { name: pokemon } })),
+        fallback: 'blocking'
     }
 
 }
@@ -126,19 +126,43 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
 export const getStaticProps: GetStaticProps = async ({ params }) => {
 
     const { name } = params as { name: string };
-    const { data } = await pokeApi.get<PokemonResponse>(`/pokemon/${name}`); 
 
-    const pokemon = {
-        id: data.id,
-        name: data.name,
-        sprites: data.sprites
-    }
+    try {
+        const { data } = await pokeApi.get<PokemonResponse>(`/pokemon/${name}`);
 
-    return {
-        props: {
-            pokemon
+        if(!data){
+            return {
+                redirect: {
+                    destination: '/',
+                    permanent: false
+                }
+            }
         }
+
+
+        const pokemon = {
+            id: data.id,
+            name: data.name,
+            sprites: data.sprites
+        }
+
+        return {
+            props: {
+                pokemon
+            },
+            revalidate: 86400
+        }
+
+    } catch (error) {
+
+        return {
+            notFound: true
+        }
+
     }
+
+
+
 
 }
 
